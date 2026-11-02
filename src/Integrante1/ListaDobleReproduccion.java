@@ -3,12 +3,9 @@ package Integrante1;
 
 public class ListaDobleReproduccion {
 
-    // Punteros principales
     private NodoDoble head;
     private NodoDoble tail;
     private NodoDoble cancionActual;
-
-    // Control del reproductor
     private boolean modoBucle;
     private int cantidad;
 
@@ -21,111 +18,140 @@ public class ListaDobleReproduccion {
         cantidad = 0;
     }
 
-    // Agregar canción al final en O(1)
+    // Buscar una cancion por ID O(n)
+    public NodoDoble buscarNodoPorId(int id) {
+        NodoDoble auxiliar = head;
+
+        for (int i = 0; i < cantidad; i++) {
+            if (auxiliar == null) {
+                return null;
+            }
+
+            if (auxiliar.getDato() != null
+                    && auxiliar.getDato().getId() == id) {
+                return auxiliar;
+            }
+
+            auxiliar = auxiliar.getNext();
+        }
+
+        return null;
+    }
+
+    // Comprobar si un nodo pertenece a esta lista O(n)
+    public boolean contieneNodo(NodoDoble nodo) {
+        if (nodo == null || !nodo.isEnLista()) {
+            return false;
+        }
+
+        NodoDoble auxiliar = head;
+
+        for (int i = 0; i < cantidad; i++) {
+            if (auxiliar == nodo) {
+                return true;
+            }
+
+            if (auxiliar == null) {
+                return false;
+            }
+
+            auxiliar = auxiliar.getNext();
+        }
+
+        return false;
+    }
+
+    // Agregar una cancion al final
     public void agregarAlFinal(Cancion cancion) {
+        if (cancion == null) {
+            throw new IllegalArgumentException(
+                "La cancion no puede ser nula.");
+        }
+
+        if (buscarNodoPorId(cancion.getId()) != null) {
+            throw new IllegalArgumentException(
+                "Ya existe una cancion con ese ID.");
+        }
 
         NodoDoble nuevo = new NodoDoble(cancion);
 
-        // Caso 1: lista vacía
         if (head == null) {
             head = nuevo;
             tail = nuevo;
             cancionActual = nuevo;
-
         } else {
-
-            // Conectar el nuevo nodo con el último
             nuevo.setPrev(tail);
             tail.setNext(nuevo);
-
-            // Actualizar la cola
             tail = nuevo;
-
-            // Si está activo el modo bucle,
-            // mantener la conexión circular
-            if (modoBucle) {
-                tail.setNext(head);
-                head.setPrev(tail);
-            }
         }
 
+        nuevo.setEnLista(true);
         cantidad++;
-
-        System.out.println("Canción agregada: "
-                + cancion.getTitulo());
+        cerrarCirculo();
     }
 
-    // Pasar a la siguiente canción en O(1)
-    public void pasarSiguiente() {
-
+    // Avanzar a la siguiente cancion O(1)
+    public boolean pasarSiguiente() {
         if (cancionActual == null) {
-            System.out.println("La lista está vacía.");
-            return;
+            throw new IllegalStateException(
+                "La lista esta vacia.");
         }
 
-        if (cancionActual.getNext() == null) {
-            System.out.println("Ya estás en la última canción.");
-            return;
+        if (cancionActual == tail && !modoBucle) {
+            return false;
         }
 
-        cancionActual = cancionActual.getNext();
+        if (cancionActual == tail) {
+            cancionActual = head;
+        } else {
+            cancionActual = cancionActual.getNext();
+        }
 
-        mostrarCancionActual();
+        return true;
     }
 
-    // Volver a la canción anterior en O(1)
-    public void volverAnterior() {
-
+    // Volver a la cancion anterior O(1)
+    public boolean volverAnterior() {
         if (cancionActual == null) {
-            System.out.println("La lista está vacía.");
-            return;
+            throw new IllegalStateException(
+                "La lista esta vacia.");
         }
 
-        if (cancionActual.getPrev() == null) {
-            System.out.println("Ya estás en la primera canción.");
-            return;
+        if (cancionActual == head && !modoBucle) {
+            return false;
         }
 
-        cancionActual = cancionActual.getPrev();
+        if (cancionActual == head) {
+            cancionActual = tail;
+        } else {
+            cancionActual = cancionActual.getPrev();
+        }
 
-        mostrarCancionActual();
+        return true;
     }
 
-    // Activar modo bucle en O(1)
+    // Activar el modo bucle
     public void activarModoBucle() {
-
         if (head == null) {
-            System.out.println("No hay canciones para activar el bucle.");
-            return;
+            throw new IllegalStateException(
+                "No hay canciones en la lista.");
         }
 
         modoBucle = true;
-
-        tail.setNext(head);
-        head.setPrev(tail);
-
-        System.out.println("Modo bucle activado.");
+        cerrarCirculo();
     }
 
-    // Desactivar modo bucle en O(1)
+    // Desactivar el modo bucle
     public void desactivarModoBucle() {
-
         if (!modoBucle) {
-            System.out.println("El modo bucle ya está desactivado.");
             return;
         }
 
+        romperCirculo();
         modoBucle = false;
-
-        tail.setNext(null);
-        head.setPrev(null);
-
-        System.out.println("Modo bucle desactivado.");
     }
 
-    // Cambiar estado del modo bucle
     public void cambiarModoBucle(boolean activar) {
-
         if (activar) {
             activarModoBucle();
         } else {
@@ -133,91 +159,33 @@ public class ListaDobleReproduccion {
         }
     }
 
-    // Mostrar canción actual
-    public void mostrarCancionActual() {
-
-        if (cancionActual == null) {
-            System.out.println("No hay canción reproduciéndose.");
-            return;
-        }
-
-        System.out.println("\nReproduciendo:");
-        System.out.println(cancionActual.getDato());
-    }
-
-    // Mostrar toda la lista
-    public void mostrarLista() {
-
-        if (head == null) {
-            System.out.println("La lista de reproducción está vacía.");
-            return;
-        }
-
-        NodoDoble auxiliar = head;
-
-        System.out.println("\n===== LISTA DE REPRODUCCIÓN =====");
-
-        // Recorrido circular
-        if (modoBucle) {
-
-            do {
-                mostrarNodo(auxiliar);
-                auxiliar = auxiliar.getNext();
-
-            } while (auxiliar != head);
-
-        } else {
-
-            // Recorrido normal
-            while (auxiliar != null) {
-                mostrarNodo(auxiliar);
-                auxiliar = auxiliar.getNext();
-            }
-        }
-
-        System.out.println("Total de canciones: " + cantidad);
-        System.out.println("Modo bucle: "
-                + (modoBucle ? "Activado" : "Desactivado"));
-    }
-
-    // Mostrar información de un nodo
-    private void mostrarNodo(NodoDoble nodo) {
-
-        if (nodo == cancionActual) {
-            System.out.print(">> ");
-        } else {
-            System.out.print("   ");
-        }
-
-        System.out.println(nodo.getDato());
-    }
-
-    // Desconecta tail y head si el bucle esta activo, para operar como lista lineal 20
+    // Desconectar temporalmente los extremos
     private void romperCirculo() {
-
         if (modoBucle && head != null) {
             tail.setNext(null);
             head.setPrev(null);
         }
     }
 
-    // Vuelve a conectar tail con head si el bucle esta activo 20
+    // Restablecer conexiones de los extremos
     private void cerrarCirculo() {
+        if (head == null) {
+            return;
+        }
 
-        if (modoBucle && head != null) {
+        if (modoBucle) {
             tail.setNext(head);
             head.setPrev(tail);
+        } else {
+            head.setPrev(null);
+            tail.setNext(null);
         }
     }
 
-    // Saca el nodo de la lista uniendo a sus vecinos y actualiza head y tail 20
+    // Desconectar un nodo de sus vecinos
     private void desconectar(NodoDoble nodo) {
-
-        NodoDoble ant;
-        NodoDoble sig;
-
-        ant = nodo.getPrev();
-        sig = nodo.getNext();
+        NodoDoble ant = nodo.getPrev();
+        NodoDoble sig = nodo.getNext();
 
         if (ant != null) {
             ant.setNext(sig);
@@ -230,12 +198,15 @@ public class ListaDobleReproduccion {
         } else {
             tail = ant;
         }
+
+        nodo.setPrev(null);
+        nodo.setNext(null);
     }
 
-    // Mete el nodo despues de ant (si ant es null lo deja de primero) 20
-    private void conectarDespuesDe(NodoDoble nodo, NodoDoble ant) {
-
-        NodoDoble sig;
+    // Conectar un nodo despues de otro
+    // Si ant es null, insertar al inicio
+    private void conectarDespuesDe(
+            NodoDoble nodo, NodoDoble ant) {
 
         if (ant == null) {
             nodo.setPrev(null);
@@ -249,7 +220,7 @@ public class ListaDobleReproduccion {
 
             head = nodo;
         } else {
-            sig = ant.getNext();
+            NodoDoble sig = ant.getNext();
 
             nodo.setPrev(ant);
             nodo.setNext(sig);
@@ -263,16 +234,35 @@ public class ListaDobleReproduccion {
         }
     }
 
-    // Inserta un nodo ya creado despues de ant, tambien sirve para el undo 20
-    public int insertarNodoDespuesDe(NodoDoble nodo, NodoDoble ant) {
+    // Insertar un nodo existente
+    // Puede usarse para restaurar una eliminacion
+    public int insertarNodoDespuesDe(
+            NodoDoble nodo, NodoDoble ant) {
 
-        if (nodo == null) {
+        if (nodo == null || nodo.getDato() == null) {
             return -1;
         }
 
-        romperCirculo();
+        if (nodo.isEnLista()) {
+            return -1;
+        }
 
+        int id = nodo.getDato().getId();
+
+        if (buscarNodoPorId(id) != null) {
+            return -1;
+        }
+
+        // Si el vecino original ya no existe,
+        // insertar al final como respaldo para Undo
+        if (ant != null && !contieneNodo(ant)) {
+            ant = tail;
+        }
+
+        romperCirculo();
         conectarDespuesDe(nodo, ant);
+
+        nodo.setEnLista(true);
         cantidad++;
 
         if (cancionActual == null) {
@@ -280,37 +270,46 @@ public class ListaDobleReproduccion {
         }
 
         cerrarCirculo();
-
         return 1;
     }
 
-    // Play Next: crea una cancion nueva justo despues de la actual 20
+    // Play Next: insertar despues de la actual
     public int insertarDespuesDeActual(Cancion cancion) {
-
         if (cancion == null) {
             return -1;
         }
 
-        return insertarNodoDespuesDe(new NodoDoble(cancion), cancionActual);
+        if (buscarNodoPorId(cancion.getId()) != null) {
+            return -1;
+        }
+
+        if (head != null && cancionActual == null) {
+            return -1;
+        }
+
+        NodoDoble nuevo = new NodoDoble(cancion);
+
+        return insertarNodoDespuesDe(
+            nuevo, cancionActual);
     }
 
-    // Quita el nodo dado y lo devuelve; si era el actual, mueve cancionActual 20
-    public NodoDoble eliminarNodoEspecifico(NodoDoble nodo) {
+    // Eliminar un nodo especifico
+    public NodoDoble eliminarNodoEspecifico(
+            NodoDoble nodo) {
 
-        NodoDoble ant;
-        NodoDoble sig;
-
-        if (nodo == null || head == null) {
+        if (!contieneNodo(nodo)) {
             return null;
         }
 
         romperCirculo();
 
-        ant = nodo.getPrev();
-        sig = nodo.getNext();
+        NodoDoble ant = nodo.getPrev();
+        NodoDoble sig = nodo.getNext();
 
         desconectar(nodo);
         cantidad--;
+
+        nodo.setEnLista(false);
 
         if (nodo == cancionActual) {
             if (sig != null) {
@@ -323,71 +322,174 @@ public class ListaDobleReproduccion {
         }
 
         if (cantidad == 0) {
+            head = null;
+            tail = null;
+            cancionActual = null;
             modoBucle = false;
         }
 
         cerrarCirculo();
-
         return nodo;
     }
 
-    // Elimina la cancion que esta sonando y devuelve su nodo 20
+    // Eliminar la cancion actual
     public NodoDoble eliminarCancionActual() {
-
         return eliminarNodoEspecifico(cancionActual);
     }
 
-    // Cambia el nodo de posicion, dejandolo despues de destino 20
-    public int moverCancion(NodoDoble nodo, NodoDoble destino) {
+    // Mover un nodo despues de otro
+    // destino null significa mover al inicio
+    public int moverCancion(
+            NodoDoble nodo, NodoDoble destino) {
 
-        if (nodo == null || head == null || nodo == destino) {
+        if (!contieneNodo(nodo)) {
+            return -1;
+        }
+
+        if (destino != null
+                && !contieneNodo(destino)) {
+            return -1;
+        }
+
+        if (nodo == destino) {
             return -1;
         }
 
         romperCirculo();
 
+        // No mover si ya esta en esa posicion
+        if (nodo.getPrev() == destino) {
+            cerrarCirculo();
+            return 1;
+        }
+
         desconectar(nodo);
         conectarDespuesDe(nodo, destino);
 
         cerrarCirculo();
-
         return 1;
     }
 
-    // Pone cancionActual directamente en el nodo elegido 20
+    // Saltar directamente a un nodo conocido
     public int saltarACancion(NodoDoble nodo) {
-
-        if (nodo == null || head == null) {
+        if (!contieneNodo(nodo)) {
             return -1;
         }
 
         cancionActual = nodo;
-
         return 1;
     }
 
-    // Busca un nodo por el id de su cancion, devuelve null si no existe 20
-    public NodoDoble buscarNodoPorId(int id) {
-
-        NodoDoble auxiliar;
-        int cont;
-
-        auxiliar = head;
-        cont = 0;
-
-        while (auxiliar != null && cont < cantidad) {
-            if (auxiliar.getDato().getId() == id) {
-                return auxiliar;
-            }
-
-            auxiliar = auxiliar.getNext();
-            cont++;
+    // Obtener informacion de la cancion actual
+    public String mostrarCancionActual() {
+        if (cancionActual == null) {
+            return "No hay cancion seleccionada.";
         }
 
-        return null;
+        return "Reproduciendo: "
+            + cancionActual.getDato().toString();
     }
 
-    // Getters de los punteros principales
+    // Obtener toda la lista en texto
+    public String mostrarLista() {
+        if (head == null) {
+            return "La lista esta vacia.";
+        }
+
+        StringBuilder resultado = new StringBuilder();
+        NodoDoble auxiliar = head;
+
+        resultado.append(
+            "\n===== LISTA DE REPRODUCCION =====\n");
+
+        for (int i = 0; i < cantidad; i++) {
+            if (auxiliar == null) {
+                throw new IllegalStateException(
+                    "Error en las conexiones de la lista.");
+            }
+
+            if (auxiliar == cancionActual) {
+                resultado.append(">> ");
+            } else {
+                resultado.append("   ");
+            }
+
+            resultado.append(auxiliar.getDato());
+            resultado.append("\n");
+
+            auxiliar = auxiliar.getNext();
+        }
+
+        resultado.append("Total de canciones: ")
+                 .append(cantidad)
+                 .append("\n");
+
+        resultado.append("Modo bucle: ")
+                 .append(modoBucle
+                     ? "Activado" : "Desactivado");
+
+        return resultado.toString();
+    }
+
+    // Comprobar la integridad de los enlaces
+    public boolean validarEstructura() {
+        if (cantidad == 0) {
+            return head == null
+                && tail == null
+                && cancionActual == null
+                && !modoBucle;
+        }
+
+        if (head == null || tail == null
+                || cancionActual == null) {
+            return false;
+        }
+
+        NodoDoble auxiliar = head;
+        NodoDoble anterior = modoBucle ? tail : null;
+
+        boolean actualEncontrada = false;
+
+        for (int i = 0; i < cantidad; i++) {
+            if (auxiliar == null
+                    || !auxiliar.isEnLista()) {
+                return false;
+            }
+
+            if (auxiliar.getPrev() != anterior) {
+                return false;
+            }
+
+            if (auxiliar == cancionActual) {
+                actualEncontrada = true;
+            }
+
+            anterior = auxiliar;
+            auxiliar = auxiliar.getNext();
+
+            if (i < cantidad - 1
+                    && (auxiliar == null
+                    || auxiliar == head)) {
+                return false;
+            }
+        }
+
+        if (anterior != tail || !actualEncontrada) {
+            return false;
+        }
+
+        if (modoBucle) {
+            return auxiliar == head
+                && tail.getNext() == head
+                && head.getPrev() == tail;
+        }
+
+        return auxiliar == null
+            && head.getPrev() == null
+            && tail.getNext() == null;
+    }
+
+    // Getters
     public NodoDoble getHead() {
         return head;
     }

@@ -3,19 +3,20 @@ package Integrante1;
 
 public class NodoDoble {
 
-    // Atributos
     private Cancion dato;
     private NodoDoble next;
     private NodoDoble prev;
+    private boolean enLista;
 
     // Constructor
     public NodoDoble(Cancion dato) {
         this.dato = dato;
         this.next = null;
         this.prev = null;
+        this.enLista = false;
     }
 
-    // Getter y Setter del dato
+    // Getter y setter de la cancion
     public Cancion getDato() {
         return dato;
     }
@@ -24,7 +25,7 @@ public class NodoDoble {
         this.dato = dato;
     }
 
-    // Getter y Setter del siguiente nodo
+    // Getter y setter del siguiente nodo
     public NodoDoble getNext() {
         return next;
     }
@@ -33,12 +34,21 @@ public class NodoDoble {
         this.next = next;
     }
 
-    // Getter y Setter del nodo anterior
+    // Getter y setter del nodo anterior
     public NodoDoble getPrev() {
         return prev;
     }
 
     public void setPrev(NodoDoble prev) {
         this.prev = prev;
+    }
+
+    // Getter y setter de enLista
+    public boolean isEnLista() {
+        return enLista;
+    }
+
+    public void setEnLista(boolean enLista) {
+        this.enLista = enLista;
     }
 }
