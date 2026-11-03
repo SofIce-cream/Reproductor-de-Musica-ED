@@ -1,13 +1,13 @@
-
 package Integrante1;
 
 public class Cancion {
 
     // Atributos
-    private int id;
+    private final int id; 
     private String titulo;
     private String artista;
     private int duracion;
+    
 
     // Constructor
     public Cancion(int id, String titulo, String artista, int duracion) {
@@ -20,10 +20,6 @@ public class Cancion {
     // Getter y Setter del ID
     public int getId() {
         return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     // Getter y Setter del título
