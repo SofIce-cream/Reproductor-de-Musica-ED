@@ -403,8 +403,7 @@ public class ListaDobleReproduccion {
         return resultado.toString();
     }
 
-    // Comprobar la integridad de los enlaces (Revisar)
-    //Cambiar el for 
+    // Comprobar la integridad de los enlaces y del índice || O(n) || método de diagnóstico
     public boolean validarEstructura() {
         if (cantidad == 0) {
             return head == null
@@ -427,8 +426,9 @@ public class ListaDobleReproduccion {
         NodoDoble anterior = modoBucle ? tail : null;
 
         boolean actualEncontrada = false;
+        int i = 0;
 
-        for (int i = 0; i < cantidad; i++) {
+        while (i < cantidad) {
             if (auxiliar == null
                     || !auxiliar.isEnLista()) {
                 return false;
@@ -454,6 +454,8 @@ public class ListaDobleReproduccion {
                     || auxiliar == head)) {
                 return false;
             }
+
+            i++;
         }
 
         if (anterior != tail || !actualEncontrada) {
