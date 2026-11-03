@@ -1,5 +1,4 @@
 package Integrante1;
-import java.util.*;
 
 public class ReproductorController {
 	private ListaDobleReproduccion fila; 
@@ -18,244 +17,236 @@ public class ReproductorController {
 		return fila.buscarNodoPorId(id) != null;
 	}
 
-	public void reproducirSiguiente() {
+	public String reproducirSiguiente() {
 		NodoDoble actual = fila.getCancionActual();
 		if(actual == null) {
-			System.out.println("No está sonando ninguna canción actualmente");
-			return;
+			throw new ListaVaciaException("No está sonando ninguna canción actualmente");
 		}
 		if(actual.getNext() == null && !fila.isModoBucle()) {
-			System.out.println("Ya estás en el final de la lista");
-			return;
+			throw new ReproductorException("Ya estás en el final de la lista");
 		}
 		//Guardar la actual en el historial
 		pilaHistorial.push(actual);
 		
 		//Pasa a la siguiente cancion
 		fila.pasarSiguiente();
-		System.out.println("⏭ Está sonando: " + fila.getCancionActual().getDato().getTitulo());
+		return "⏭ Está sonando: " + fila.getCancionActual().getDato().getTitulo();
 	}
 	
-	public void reproducirAnteriorFila() {
+	public String reproducirAnteriorFila() {
 		NodoDoble actual = fila.getCancionActual();
 		
+		//Casos de expceción
 		if(actual == null) {
-			System.out.println("La cola está vacía");
-			return;
+			throw new ListaVaciaException("La cola está vacía");
 		}
 		if(actual.getPrev() == null && !fila.isModoBucle()) {
-			System.out.println("Ya estás en el inicio de la lista"); 
-			return;
+			throw new ReproductorException("Ya estás en el inicio de la lista");
 		}
 		fila.volverAnterior();
-		NodoDoble nuevaActual = fila.getCancionActual();
-		if(nuevaActual != null) {
-			System.out.println("⏮ Está sonando: " + nuevaActual.getDato().getTitulo());
-		}
+		return "⏮ Está sonando: " + fila.getCancionActual().getDato().getTitulo();
 	}
 	
-	public void volverHistorialReal() {
+	public String volverHistorialReal() {
 		if(pilaHistorial.isEmpty()) {
-			System.out.println("El historial está vacío");
-			return;
+			throw new ReproductorException("El historial está vacío");
 		}
-		// Se descartan del historial los nodos que ya no existen en la fila.
-		while(!pilaHistorial.isEmpty()) {
-			NodoDoble ultimaEscucha = pilaHistorial.pop();
-			if(ultimaEscucha == null || ultimaEscucha.getDato() == null) {
-				continue;
-			}
-			NodoDoble enLista = fila.buscarNodoPorId(ultimaEscucha.getDato().getId());
-			if(enLista == ultimaEscucha) {
-				fila.saltarACancion(ultimaEscucha);
-				System.out.println("Volviendo a " + ultimaEscucha.getDato().getTitulo());
-				return;
+		// Se busca la última canción que siga en la fila
+		PilaEnlazada<NodoDoble> omitidas = new PilaEnlazada<>(); // Las que no están se guardan aparte para el Undo
+		NodoDoble encontrada = null;
+		while(encontrada == null && !pilaHistorial.isEmpty()) {
+			NodoDoble candidata = pilaHistorial.pop();
+			if(fila.contieneNodo(candidata)) {
+				encontrada = candidata;
+			} else {
+				omitidas.push(candidata);
 			}
 		}
-		System.out.println("Las canciones del historial ya no están en la fila");
+		// Se devuelven al historial en su orden original
+		while(!omitidas.isEmpty()) {
+			pilaHistorial.push(omitidas.pop());
+		}
+		if(encontrada == null) {
+			throw new ReproductorException("Las canciones del historial ya no están en la fila");
+		}
+		fila.saltarACancion(encontrada);
+		return "Volviendo a " + encontrada.getDato().getTitulo();
 	}
 	
-	public void agregarAlFinal(int id, String titulo, String artista, int duracion) {
-		if(!datosValidos(id, titulo, artista, duracion)) {
-			return;
-		}
+	public String agregarAlFinal(int id, String titulo, String artista, int duracion) {
+		validarDatos(id, titulo, artista, duracion);
 		Cancion nueva = new Cancion(id, titulo, artista, duracion);
 		fila.agregarAlFinal(nueva);
-		System.out.println(nueva.getTitulo() + " agregada con éxito");
+		return nueva.getTitulo() + " agregada con éxito";
 	}
 	
-	public void playNext(int id, String titulo, String artista, int duracion) {
-		if(!datosValidos(id, titulo, artista, duracion)) {
-			return;
-		}
+	public String playNext(int id, String titulo, String artista, int duracion) {
+		validarDatos(id, titulo, artista, duracion);
 		Cancion nueva = new Cancion(id, titulo, artista, duracion);
-		if(fila.getHead() == null|| fila.getCancionActual() == null) {
+		if(fila.getHead() == null || fila.getCancionActual() == null) {
 			fila.agregarAlFinal(nueva);
-			System.out.println(nueva.getTitulo() + " agregada con éxito");
+			return nueva.getTitulo() + " agregada con éxito";
 		}
-		else {
-			if(fila.insertarDespuesDeActual(nueva) == 1) {
-				System.out.println(nueva.getTitulo() + " sonará después de la actual");
-			}
-			else {
-				System.out.println("No fue posible hacer esta acción");
-			}
+		if(fila.insertarDespuesDeActual(nueva) != 1) {
+			throw new ReproductorException("No fue posible insertar la canción después de la actual");
 		}
+		return nueva.getTitulo() + " sonará después de la actual";
 	}
 	
-	private boolean datosValidos(int id, String titulo, String artista, int duracion) {
+	private void validarDatos(int id, String titulo, String artista, int duracion) {
 		if(id <= 0) {
-			System.out.println("El ID debe ser un número positivo");
-			return false;
+			throw new DatosCancionInvalidosException("El ID debe ser un número positivo");
 		}
 		if(existeId(id)) {
-			System.out.println("Ya existe una canción con el ID " + id);
-			return false;
+			throw new IdRepetidoException("Ya existe una canción con el ID " + id);
 		}
 		if(titulo == null || titulo.trim().isEmpty() || artista == null || artista.trim().isEmpty()) {
-			System.out.println("El título y el artista no pueden estar vacíos");
-			return false;
+			throw new DatosCancionInvalidosException("El título y el artista no pueden estar vacíos");
 		}
 		if(duracion <= 0) {
-			System.out.println("La duración debe ser mayor a 0 segundos");
-			return false;
+			throw new DatosCancionInvalidosException("La duración debe ser mayor a 0 segundos");
 		}
-		return true;
 	}
 	
 	private NodoDoble eliminarYGuardar(NodoDoble nodo) {
-		if(nodo == null || !fila.contieneNodo(nodo))
-			return null;
+		if(!fila.contieneNodo(nodo)) {
+			throw new ReproductorException("La canción no está en la fila");
+		}
 		NodoDoble anterior = (nodo == fila.getHead()) ? null : nodo.getPrev();
 		NodoDoble siguiente = (nodo == fila.getTail()) ? null : nodo.getNext();
 		NodoDoble eliminado = fila.eliminarNodoEspecifico(nodo);
-		if(eliminado != null) {
-			pilaUndo.push(new RegistroEliminacion(eliminado, anterior, siguiente));
-		}
+		pilaUndo.push(new RegistroEliminacion(eliminado, anterior, siguiente));
 		return eliminado;
 	}
 	
-	public void eliminarActual() {
-		NodoDoble eliminada = eliminarYGuardar(fila.getCancionActual()); //Guardar la eliminada
-		if(eliminada ==  null) { //Casos de excepción
-			System.out.println("No es posible hacer esta acción"); 
-			return;
+	public String eliminarActual() {
+		if(fila.getCancionActual() == null) {
+			throw new ListaVaciaException("No hay ninguna canción para eliminar");
 		}
-		System.out.println("Eliminada " + eliminada.getDato().getTitulo() + " con éxito");	
+		NodoDoble eliminada = eliminarYGuardar(fila.getCancionActual()); //Guardar la eliminada
+		return "Eliminada " + eliminada.getDato().getTitulo() + " con éxito";
 	}
 
-	public void eliminarSeleccion(int id) {
+	public String eliminarSeleccion(int id) {
 		if(fila.getHead() == null) {
-			System.out.println("La fila está vacía");
-			return;
+			throw new ListaVaciaException("La fila está vacía");
 		}
 		NodoDoble nodo = fila.buscarNodoPorId(id);
-		NodoDoble nodoEliminado = eliminarYGuardar(nodo);
-		if(nodoEliminado != null) {
-			System.out.println("Eliminada " + nodoEliminado.getDato().getTitulo() + " con éxito");
+		if(nodo == null) {
+			throw new ReproductorException("No se encontró una canción con el ID " + id);
 		}
-		else {
-			System.out.println("No fue posible encontrar esta canción");
-		}
+		NodoDoble eliminada = eliminarYGuardar(nodo);
+		return "Eliminada " + eliminada.getDato().getTitulo() + " con éxito";
 	}
 	
-	public void deshacerEliminacion() {
+	// La canción vuelve a su posición original solo si sus dos vecinos siguen juntos
+	private boolean vecinosIntactos(RegistroEliminacion registro) {
+		NodoDoble anterior = registro.getAnterior();
+		NodoDoble siguiente = registro.getSiguiente();
+		
+		if(anterior == null && siguiente == null) {
+			return fila.getHead() == null; // Era la única canción y la fila sigue vacía
+		}
+		if(anterior == null) {
+			return fila.contieneNodo(siguiente) && fila.getHead() == siguiente; // Estaba al inicio
+		}
+		if(siguiente == null) {
+			return fila.contieneNodo(anterior) && fila.getTail() == anterior; // Estaba al final
+		}
+		return fila.contieneNodo(anterior) && fila.contieneNodo(siguiente)
+				&& anterior.getNext() == siguiente && siguiente.getPrev() == anterior;
+	}
+	
+	public String deshacerEliminacion() {
 		if(pilaUndo.isEmpty()) {
-			System.out.println("No hay nada para deshacer");
-			return;
+			throw new ReproductorException("No hay nada para deshacer");
 		}
 		RegistroEliminacion registro = pilaUndo.pop();
 		NodoDoble eliminada = registro.getNodoEliminado();
-		if(eliminada == null || eliminada.getDato() == null) { //Casos de excepción
-			System.out.println("No es posible hacer esta acción");
-			return;
-		}
+		String titulo = eliminada.getDato().getTitulo();
 		
-		// Si mientras se agregó otra canción con el mismo ID, no se puede restaurar
+		// Si mientras tanto se agregó otra canción con el mismo ID, no se puede restaurar
 		if(existeId(eliminada.getDato().getId())) {
-			System.out.println("No se puede restaurar " + eliminada.getDato().getTitulo() + ": ya existe una canción con ese ID");
-			return;
+			throw new IdRepetidoException("No se puede restaurar " + titulo + ": ya existe una canción con ese ID (se descartó del Undo)");
 		}
-		NodoDoble anterior = registro.getAnterior();
-		boolean posicionOriginal = true;
 		
-		//Si el anterior no está en la fila, va al final
-		if(anterior != null && !fila.contieneNodo(anterior)) {
-			anterior = fila.getTail();
-			posicionOriginal = false;
-		}
+		//Si los vecinos ya no están juntos, va al final
+		boolean posicionOriginal = vecinosIntactos(registro);
+		NodoDoble anterior = posicionOriginal ? registro.getAnterior() : fila.getTail();
+		
 		//Se reinserta la canción
-		if(fila.insertarNodoDespuesDe(eliminada, anterior) == 1) {
-			System.out.println("Canción " + eliminada.getDato().getTitulo() + " restaurada con éxito" + (posicionOriginal ? " en su posicion original" : " al final de la fila"));
-		}else {
-			System.out.println("No fue posible hacer esta acción");
+		if(fila.insertarNodoDespuesDe(eliminada, anterior) != 1) {
+			throw new ReproductorException("No fue posible restaurar la canción");
 		}
+		return "Canción " + titulo + " restaurada con éxito" + (posicionOriginal ? " en su posición original" : " al final de la fila");
 	}
 	
-	public void saltarCancion(int idDestino) {
+	public String saltarCancion(int idDestino) {
 		if(fila.getHead() == null) {
-			System.out.println("No es posible hacer esta acción");
-			return;
+			throw new ListaVaciaException("La fila está vacía");
 		}
 		NodoDoble destino = fila.buscarNodoPorId(idDestino);
 		if(destino == null) {
-			System.out.println("No es posible hacer esta acción");
-			return;
+			throw new ReproductorException("No se encontró una canción con el ID " + idDestino);
 		}
 		NodoDoble actual = fila.getCancionActual();
 		if(destino == actual) { // Evita meter la misma canción al historial sin haber cambiado
-			System.out.println("Esa canción ya está sonando");
-			return;
+			throw new ReproductorException("Esa canción ya está sonando");
 		}
 		if(actual != null) {
 			pilaHistorial.push(actual);
 		}
 		fila.saltarACancion(destino);
-		System.out.println("⏭ Saltando a " + destino.getDato().getTitulo());
+		return "⏭ Saltando a " + destino.getDato().getTitulo();
 	}
 	
-	public void moverCancion(int actual, int id) {
+	// idReferencia = 0 significa mover la canción al inicio de la fila
+	public String moverCancion(int idMover, int idReferencia) {
 		if(fila.getHead() == null) {
-			System.out.println("No es posible hacer esta acción");
-			return;
+			throw new ListaVaciaException("La fila está vacía");
 		}
-		NodoDoble mover = fila.buscarNodoPorId(actual);
-		NodoDoble destino = fila.buscarNodoPorId(id);
-		
-		if(mover == null || destino == null) {
-			System.out.println("No se encontró alguna de las canciones indicadas");
-			return;
+		NodoDoble mover = fila.buscarNodoPorId(idMover);
+		if(mover == null) {
+			throw new ReproductorException("No se encontró una canción con el ID " + idMover);
 		}
-		int resultado = fila.moverCancion(mover, destino);
-		if(resultado == 1){
-			System.out.println("Canción " + mover.getDato().getTitulo() + " movida después de " + destino.getDato().getTitulo());
-		} else {
-			System.out.println("No es posible mover la canción a esa posición");
+		NodoDoble destino = null;
+		if(idReferencia != 0) {
+			destino = fila.buscarNodoPorId(idReferencia);
+			if(destino == null) {
+				throw new ReproductorException("No se encontró una canción con el ID " + idReferencia);
+			}
 		}
+		if(fila.moverCancion(mover, destino) != 1) {
+			throw new ReproductorException("No es posible mover la canción a esa posición");
+		}
+		if(destino == null) {
+			return "Canción " + mover.getDato().getTitulo() + " movida al inicio de la fila";
+		}
+		return "Canción " + mover.getDato().getTitulo() + " movida después de " + destino.getDato().getTitulo();
 	}
 	
-	public void modeBucle() {
+	public String modoBucle() {
 		// Se alterna usando el estado real de la lista
 		if(fila.getHead() == null) {
-			System.out.println("No hay canciones en la fila");
-			return;
+			throw new ListaVaciaException("No hay canciones en la fila");
 		}
 		boolean estado = !fila.isModoBucle(); //En base al estado, se cambia
 		fila.cambiarModoBucle(estado);
-		System.out.println("↳↰ Modo bucle " + (estado ? "activado" : "desactivado"));
+		return "↳↰ Modo bucle " + (estado ? "activado" : "desactivado");
 	}
 	
-	public void detalles() {
-		System.out.println("- - - - ˗ˏˋ 🕒 Historial de Reproducción ˎˊ˗ - - - -");
+	public String detalles() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("- - - - ˗ˏˋ 🕒 Historial de Reproducción ˎˊ˗ - - - -\n");
 		if(pilaHistorial.isEmpty()) { //Revisar que no este vacio
-			System.out.println(" Vacío ");
+			sb.append(" Vacío \n");
 		}
 		 
 		//Mostrar el historial
 		PilaEnlazada<NodoDoble> auxHis = new PilaEnlazada<>();
 		while(!pilaHistorial.isEmpty()){
 			NodoDoble nodo = pilaHistorial.pop();
-			System.out.println(" " + nodo.getDato());
+			sb.append(" ").append(nodo.getDato()).append("\n");
 			auxHis.push(nodo);
 		}
 		
@@ -263,42 +254,45 @@ public class ReproductorController {
 			pilaHistorial.push(auxHis.pop());
 		}
 		
-		System.out.println("- - - - ˗ˏˋ 🗑 Canciones Eliminadas (Undo) ˎˊ˗ - - - -");
+		sb.append("- - - - ˗ˏˋ 🗑 Canciones Eliminadas (Undo) ˎˊ˗ - - - -\n");
 		if(pilaUndo.isEmpty()) {
-			System.out.println(" Vacío ");
+			sb.append(" Vacío \n");
 		}
-		//Mostrar el historial
+		//Mostrar los eliminados
 		PilaEnlazada<RegistroEliminacion> auxUnd = new PilaEnlazada<>();
 		while(!pilaUndo.isEmpty()){
 			RegistroEliminacion reg = pilaUndo.pop();
-			System.out.println(" " + reg.getNodoEliminado().getDato());
+			sb.append(" ").append(reg.getNodoEliminado().getDato()).append("\n");
 			auxUnd.push(reg);
 		}
 		
 		while(!auxUnd.isEmpty()) {
 			pilaUndo.push(auxUnd.pop());
 		} //Se restaura el orden original
+		
+		return sb.toString();
 	}
 	
-	public void mostrarDashboardConsola() {
-		System.out.println("♪ 𝕽𝖊𝖕𝖗𝖔𝖉𝖚𝖈𝖙𝖔𝖗 𝕯𝖊 𝕸ú𝖘𝖎𝖈𝖆 ♪");
+	public String mostrarDashboardConsola() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("♪ 𝕽𝖊𝖕𝖗𝖔𝖉𝖚𝖈𝖙𝖔𝖗 𝕯𝖊 𝕸ú𝖘𝖎𝖈𝖆 ♪\n");
 		NodoDoble actual = fila.getCancionActual();
 		if(actual != null) {
-			System.out.println("ℝ𝕖𝕡𝕣𝕠𝕕𝕦𝕔𝕚𝕖𝕟𝕕𝕠");
+			sb.append("ℝ𝕖𝕡𝕣𝕠𝕕𝕦𝕔𝕚𝕖𝕟𝕕𝕠\n");
 			//Se muestra la información de la canción actual
-			System.out.println("⭑·•—–⏭ " + actual.getDato().getTitulo() + " - " + actual.getDato().getArtista() + " ⌛︎ " + actual.getDato().getDuracion() + " s ⏮—–•·⭑");
+			sb.append("⭑·•—–⏭ " + actual.getDato().getTitulo() + " - " + actual.getDato().getArtista() + " ⌛︎ " + actual.getDato().getDuracion() + " s ⏮—–•·⭑\n");
 			//Se muestra la canción previa y siguiente de la cola
 			String anterior = (actual.getPrev() !=null) ? actual.getPrev().getDato().getTitulo() : ".✦ ݁˖ Es el inicio de la cola";
 			String siguiente = (actual.getNext() != null) ? actual.getNext().getDato().getTitulo() : "Es el fin de la cola .✦ ݁˖";
 
-			System.out.println("⏮ Anterior: " + anterior);
-			System.out.println("⏭ Siguiente: " + siguiente);
+			sb.append("⏮ Anterior: " + anterior + "\n");
+			sb.append("⏭ Siguiente: " + siguiente + "\n");
 		}
 		else {
-			System.out.println("✦. Actualmente no está sonando nada .✦ ");
+			sb.append("✦. Actualmente no está sonando nada .✦ \n");
 		}
-		System.out.println("- - - - ˗ˏˋ ★ ˎˊ˗ - - - -");
-		System.out.println("\n" + fila.mostrarLista()); //Se muestra la fila de canciones
+		sb.append("- - - - ˗ˏˋ ★ ˎˊ˗ - - - -\n");
+		sb.append("\n" + fila.mostrarLista() + "\n"); //Se muestra la fila de canciones
 		
 		//Peek() devuelve null si la pila está vacía
 		NodoDoble ultimoHistorial = pilaHistorial.peek();
@@ -306,14 +300,14 @@ public class ReproductorController {
 		RegistroEliminacion ultimoUndo = pilaUndo.peek();
 		String undo = (ultimoUndo != null && ultimoUndo.getNodoEliminado().getDato() != null) ? ultimoUndo.getNodoEliminado().getDato().getTitulo() + " - " + ultimoUndo.getNodoEliminado().getDato().getArtista() : " ˖݁ No hay nada para deshacer ݁˖";
 		
-		//Mostrar el historial
-		System.out.println("\n★ 🕒 Cima de Historial: " + historial);
-        System.out.println("★ 🗑 Cima de Undo: " + undo);
-        System.out.println("- - - - ˗ˏˋ ★ ˎˊ˗ - - - -");
-		
+		//Mostrar la cima de cada pila
+		sb.append("\n★ 🕒 Cima de Historial: " + historial + "\n");
+		sb.append("★ 🗑 Cima de Undo: " + undo + "\n");
+		sb.append("- - - - ˗ˏˋ ★ ˎˊ˗ - - - -");
+		return sb.toString();
 	}
 	
-	public void cargarMockData() {
+	public String cargarMockData() {
 		Cancion[] mock = {
 			new Cancion(1, "Beat It",  "Michael Jackson", 218),
 			new Cancion(2, "Bohemian Rhapsody",  "Queen", 355),
@@ -334,7 +328,8 @@ public class ReproductorController {
 			}
 		}
 		if(agregadas == 0) {
-			System.out.println("La mock data ya está cargada en la fila");
+			return "La mock data ya está cargada en la fila";
 		}
+		return "Mock data cargada (" + agregadas + " canciones)";
 	}
 }
