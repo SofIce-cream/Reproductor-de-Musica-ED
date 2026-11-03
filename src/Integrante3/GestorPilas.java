@@ -98,7 +98,7 @@ public class GestorPilas {
             NodoDoble anterior = registro.getAnterior();
 
             if (puedeRestaurar(lista, registro)) {
-                int insercion =ya lista.insertarNodoDespuesDe(nodo, anterior);
+                int insercion =lista.insertarNodoDespuesDe(nodo, anterior);
 
                 if (insercion == 1) {
 
