@@ -1,5 +1,5 @@
-
 package Integrante1;
+import java.util.*;
 
 public class ListaDobleReproduccion {
 
@@ -8,6 +8,7 @@ public class ListaDobleReproduccion {
     private NodoDoble cancionActual;
     private boolean modoBucle;
     private int cantidad;
+    private Map<Integer, NodoDoble> indicePorId;
 
     // Constructor
     public ListaDobleReproduccion() {
@@ -16,49 +17,17 @@ public class ListaDobleReproduccion {
         cancionActual = null;
         modoBucle = false;
         cantidad = 0;
+        indicePorId = new HashMap<>(); 
     }
 
-    // Buscar una cancion por ID O(n)
+    // Buscar una cancion por ID || O(1) || promedio
     public NodoDoble buscarNodoPorId(int id) {
-        NodoDoble auxiliar = head;
-
-        for (int i = 0; i < cantidad; i++) {
-            if (auxiliar == null) {
-                return null;
-            }
-
-            if (auxiliar.getDato() != null
-                    && auxiliar.getDato().getId() == id) {
-                return auxiliar;
-            }
-
-            auxiliar = auxiliar.getNext();
-        }
-
-        return null;
+        return indicePorId.get(id);
     }
 
-    // Comprobar si un nodo pertenece a esta lista O(n)
+    // Comprobar si un nodo pertenece a esta lista||  O(1) ||
     public boolean contieneNodo(NodoDoble nodo) {
-        if (nodo == null || !nodo.isEnLista()) {
-            return false;
-        }
-
-        NodoDoble auxiliar = head;
-
-        for (int i = 0; i < cantidad; i++) {
-            if (auxiliar == nodo) {
-                return true;
-            }
-
-            if (auxiliar == null) {
-                return false;
-            }
-
-            auxiliar = auxiliar.getNext();
-        }
-
-        return false;
+        return nodo != null && nodo.isEnLista();
     }
 
     // Agregar una cancion al final
@@ -86,6 +55,7 @@ public class ListaDobleReproduccion {
         }
 
         nuevo.setEnLista(true);
+        indicePorId.put(cancion.getId(), nuevo);
         cantidad++;
         cerrarCirculo();
     }
@@ -263,6 +233,7 @@ public class ListaDobleReproduccion {
         conectarDespuesDe(nodo, ant);
 
         nodo.setEnLista(true);
+        indicePorId.put(id, nodo);
         cantidad++;
 
         if (cancionActual == null) {
@@ -310,6 +281,7 @@ public class ListaDobleReproduccion {
         cantidad--;
 
         nodo.setEnLista(false);
+        indicePorId.remove(nodo.getDato().getId());
 
         if (nodo == cancionActual) {
             if (sig != null) {
@@ -431,17 +403,23 @@ public class ListaDobleReproduccion {
         return resultado.toString();
     }
 
-    // Comprobar la integridad de los enlaces
+    // Comprobar la integridad de los enlaces (Revisar)
+    //Cambiar el for 
     public boolean validarEstructura() {
         if (cantidad == 0) {
             return head == null
                 && tail == null
                 && cancionActual == null
-                && !modoBucle;
+                && !modoBucle
+                && indicePorId.isEmpty();
         }
 
         if (head == null || tail == null
                 || cancionActual == null) {
+            return false;
+        }
+
+        if (indicePorId.size() != cantidad) {
             return false;
         }
 
@@ -453,6 +431,10 @@ public class ListaDobleReproduccion {
         for (int i = 0; i < cantidad; i++) {
             if (auxiliar == null
                     || !auxiliar.isEnLista()) {
+                return false;
+            }
+
+            if (indicePorId.get(auxiliar.getDato().getId()) != auxiliar) {
                 return false;
             }
 
@@ -488,7 +470,6 @@ public class ListaDobleReproduccion {
             && head.getPrev() == null
             && tail.getNext() == null;
     }
-
     // Getters
     public NodoDoble getHead() {
         return head;
