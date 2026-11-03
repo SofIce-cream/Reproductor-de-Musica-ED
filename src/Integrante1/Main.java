@@ -7,77 +7,80 @@ public class Main {
 		
 		//Instacia la estructura
 		ListaDobleReproduccion fila = new ListaDobleReproduccion();
-		PilaEnlazada pilaHistorial = new PilaEnlazada();
-		PilaEnlazada pilaUndo = new PilaEnlazada();
+		PilaEnlazada<NodoDoble> pilaHistorial = new PilaEnlazada<>();
+		PilaEnlazada<RegistroEliminacion> pilaUndo = new PilaEnlazada<>();
 		
 		ReproductorController controller = new ReproductorController(fila, pilaHistorial, pilaUndo);
 		controller.cargarMockData(); //Se agrega la mock data
 		int opcion = -1;
 		while (opcion != 0) {
             System.out.println();
-            controller.mostrarDashboardConsola();
+            System.out.println(controller.mostrarDashboardConsola());
             opcionesMenu();
             opcion = leerEntero(scanner, "\n.✦ ݁˖     Selecciona una opción     .✦ ݁˖\n ");
-
-            switch (opcion) {
-                case 1:
-                    controller.reproducirSiguiente();
-                    break;
-                case 2:
-                    controller.reproducirAnteriorFila();
-                    break;
-                case 3:
-                    controller.volverHistorialReal();
-                    break;
-                case 4:
-                    System.out.println("\n⚡ Play Next ⚡");
-                    int idNext = leerIdNuevo(scanner, controller);
-                    String tituloNext = leerTextoNoVacio(scanner, "   Título: ");
-                    String artistaNext = leerTextoNoVacio(scanner, "   Artista: ");
-                    int duracionNext = leerEnteroPositivo(scanner, "   Duración en segundos: ");
-                    controller.playNext(idNext, tituloNext, artistaNext, duracionNext);
-                    break;
-                case 5:
-                    System.out.println("\n˙⋆✮ Agregar al final de la fila ✮⋆˙");
-                    int idFinal = leerIdNuevo(scanner, controller);
-                    String tituloFinal = leerTextoNoVacio(scanner, "   Título: ");
-                    String artistaFinal = leerTextoNoVacio(scanner, "   Artista: ");
-                    int duracionFinal = leerEnteroPositivo(scanner, "   Duración en segundos: ");
-                    controller.agregarAlFinal(idFinal, tituloFinal, artistaFinal, duracionFinal);
-                    break;
-                case 6:
-                    controller.eliminarActual();
-                    break;
-                case 7:
-                    int idBorrar = leerEntero(scanner, "Ingresa el ID de la canción a eliminar: ");
-                    controller.eliminarSeleccion(idBorrar);
-                    break;
-                case 8:
-                    controller.deshacerEliminacion();
-                    break;
-                case 9:
-                    int idDestino = leerEntero(scanner, "Ingresa el ID de la canción que deseas saltar: ");
-                    controller.saltarCancion(idDestino);
-                    break;
-                case 10:
-                    int idCancion = leerEntero(scanner, "Ingresa el ID de la canción que quieres mover: ");
-                    int idRef = leerEntero(scanner, "Ingresa el ID de la canción después de la cual quieres ponerla: ");
-                    controller.moverCancion(idCancion, idRef);
-                    break;
-                case 11:
-                    controller.modeBucle();
-                    break;
-                case 12:
-                    controller.detalles();
-                    break;
-                case 13:
-                    controller.cargarMockData();
-                    break;
-                case 0:
-                    System.out.println("Cerrando el reproductor...");
-                    break;
-                default:
-                    System.out.println("Opción no válida. Intenta con un número del 0 al 13.");
+            try {
+            	switch (opcion) {
+                	case 1:
+                    	System.out.println(controller.reproducirSiguiente());
+                    	break;
+                	case 2:
+                    	System.out.println(controller.reproducirAnteriorFila());
+                    	break;
+                	case 3:
+                    	System.out.println(controller.volverHistorialReal());
+                    	break;
+                	case 4:
+                    	System.out.println("\n⚡ Play Next ⚡");
+                    	int idNext = leerIdNuevo(scanner, controller);
+                    	String tituloNext = leerTextoNoVacio(scanner, "   Título: ");
+                    	String artistaNext = leerTextoNoVacio(scanner, "   Artista: ");
+                    	int duracionNext = leerEnteroPositivo(scanner, "   Duración en segundos: ");
+                    	System.out.println(controller.playNext(idNext, tituloNext, artistaNext, duracionNext));
+                    	break;
+                	case 5:
+                    	System.out.println("\n˙⋆✮ Agregar al final de la fila ✮⋆˙");
+                    	int idFinal = leerIdNuevo(scanner, controller);
+                    	String tituloFinal = leerTextoNoVacio(scanner, "   Título: ");
+                    	String artistaFinal = leerTextoNoVacio(scanner, "   Artista: ");
+                    	int duracionFinal = leerEnteroPositivo(scanner, "   Duración en segundos: ");
+                    	System.out.println(controller.agregarAlFinal(idFinal, tituloFinal, artistaFinal, duracionFinal));
+                    	break;
+                	case 6:
+                    	System.out.println(controller.eliminarActual());
+                    	break;
+                	case 7:
+                    	int idBorrar = leerEntero(scanner, "Ingresa el ID de la canción a eliminar: ");
+                    	System.out.println(controller.eliminarSeleccion(idBorrar));
+                    	break;
+                	case 8:
+                    	System.out.println(controller.deshacerEliminacion());
+                    	break;
+                	case 9:
+                    	int idDestino = leerEntero(scanner, "Ingresa el ID de la canción que deseas saltar: ");
+                    	System.out.println(controller.saltarCancion(idDestino));
+                    	break;
+                	case 10:
+                		int idCancion = leerEntero(scanner, "Ingresa el ID de la canción que quieres mover: ");
+                    	int idRef = leerEntero(scanner, "Ingresa el ID de la canción después de la cual quieres ponerla (0 para el inicio): ");
+                    	System.out.println(controller.moverCancion(idCancion, idRef));
+                    	break;
+                	case 11:
+                    	System.out.println(controller.modoBucle());
+                    	break;
+                	case 12:
+                    	System.out.println(controller.detalles());
+                    	break;
+                	case 13:
+                    	System.out.println(controller.cargarMockData());
+                    	break;
+                	case 0:
+                    	System.out.println("Cerrando el reproductor...");
+                    	break;
+                	default:
+                		System.out.println("Opción no válida. Intenta con un número del 0 al 13.");
+            	}
+            } catch (ReproductorException e) {
+            	System.out.println("⚠ " + e.getMessage());
             }
         }
 
@@ -113,7 +116,7 @@ public class Main {
             }
         }
     }
-    // NUEVO: números mayores a 0 (duración)
+    // Números mayores a 0 (duración)
     private static int leerEnteroPositivo(Scanner scanner, String mensaje) {
         while (true) {
             int valor = leerEntero(scanner, mensaje);
@@ -123,7 +126,7 @@ public class Main {
             System.out.println("El valor debe ser mayor a 0.");
         }
     }
-    // NUEVO: pide un ID positivo que no exista aún, así no se llenan los demás datos para nada
+    // Pide un ID positivo que no exista aún, así no se llenan los demás datos para nada
     private static int leerIdNuevo(Scanner scanner, ReproductorController controller) {
         while (true) {
             int id = leerEnteroPositivo(scanner, "   ID de la canción: ");
